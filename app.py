@@ -2,15 +2,16 @@
 
 from __future__ import annotations
 
-from pathlib import Path
+import io
 
 import pandas as pd
 import streamlit as st
 
+from src import storage
 from src.pipeline import run_pipeline
-from src.transform import PROCESSED_DIR
+from src.transform import GOLD_BLOB, PROCESSED_DIR
 
-CSV_PATH = PROCESSED_DIR / "weather_clean.csv"
+CSV_PATH = PROCESSED_DIR / GOLD_BLOB
 
 LOCATIONS = {
     "Paris": (48.8566, 2.3522),
@@ -24,8 +25,11 @@ st.set_page_config(page_title="Weather Dashboard", layout="wide")
 
 
 @st.cache_data(show_spinner=False)
-def load_data(path: Path) -> pd.DataFrame:
-    return pd.read_csv(path, parse_dates=["timestamp"])
+def load_data() -> pd.DataFrame:
+    if storage.adls_enabled():
+        text = storage.download_text(storage.GOLD_CONTAINER, GOLD_BLOB)
+        return pd.read_csv(io.StringIO(text), parse_dates=["timestamp"])
+    return pd.read_csv(CSV_PATH, parse_dates=["timestamp"])
 
 
 def refresh(lat: float, lon: float, days: int) -> None:
@@ -47,10 +51,11 @@ st.sidebar.caption("Source: Open-Meteo")
 
 st.title("Weather Dashboard")
 
-if not CSV_PATH.exists():
+try:
+    df = load_data()
+except Exception:
     refresh(lat, lon, days)
-
-df = load_data(CSV_PATH)
+    df = load_data()
 
 col1, col2, col3, col4 = st.columns(4)
 col1.metric("Avg temp", f"{df['temperature_c'].mean():.1f} C")
@@ -77,4 +82,5 @@ st.map(pd.DataFrame({"lat": [lat], "lon": [lon]}), zoom=9)
 with st.expander("Cleaned data"):
     st.dataframe(df, use_container_width=True)
 
-st.caption(f"{len(df)} rows - {CSV_PATH}")
+source = "ADLS gold container" if storage.adls_enabled() else str(CSV_PATH)
+st.caption(f"{len(df)} rows - {source}")

@@ -72,6 +72,27 @@ terraform plan -out=tfplan
 terraform apply tfplan
 ```
 
+## CI (GitHub Actions)
+
+`.github/workflows/ci.yml` runs on push to `feature/**` and PRs to `main`:
+
+1. Python tests (`pytest`).
+2. `terraform fmt -check` and `terraform validate`.
+3. Security scan (`tfsec` + `checkov`, soft fail).
+4. `terraform plan` and upload the `tfplan` artifact.
+
+Azure auth uses OIDC (no client secret). One-time setup creates the service
+principal and pushes the repo secrets:
+
+```powershell
+az login
+gh auth login
+./scripts/setup_github_oidc.ps1
+```
+
+Repo secrets used: `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`,
+`TFSTATE_RG`, `TFSTATE_SA`, `TFSTATE_CONTAINER`.
+
 ## Security
 
 No secrets in the repo. The storage connection string is written to Key Vault

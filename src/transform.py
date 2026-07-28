@@ -6,7 +6,10 @@ from pathlib import Path
 
 import pandas as pd
 
+from src import storage
+
 PROCESSED_DIR = Path(__file__).resolve().parents[1] / "data" / "processed"
+GOLD_BLOB = "weather_clean.csv"
 
 COLUMN_RENAMES = {
     "time": "timestamp",
@@ -44,9 +47,15 @@ def transform_weather(payload: dict) -> pd.DataFrame:
     return df
 
 
-def save_processed(df: pd.DataFrame, processed_dir: Path = PROCESSED_DIR) -> Path:
-    """Persist the cleaned DataFrame as CSV."""
+def save_processed(df: pd.DataFrame, processed_dir: Path = PROCESSED_DIR) -> str:
+    """Persist the cleaned DataFrame as CSV.
+
+    Uploads to the ADLS gold container when enabled, else writes locally.
+    """
+    if storage.adls_enabled():
+        return storage.upload_text(storage.GOLD_CONTAINER, GOLD_BLOB, df.to_csv(index=False))
+
     processed_dir.mkdir(parents=True, exist_ok=True)
-    out_path = processed_dir / "weather_clean.csv"
+    out_path = processed_dir / GOLD_BLOB
     df.to_csv(out_path, index=False)
-    return out_path
+    return str(out_path)

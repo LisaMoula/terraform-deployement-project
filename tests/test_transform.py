@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pandas as pd
 import pytest
 
@@ -59,7 +61,7 @@ def test_transform_raises_on_empty_payload():
 
 def test_save_processed_writes_csv(tmp_path):
     df = transform_weather(_raw_payload())
-    out = save_processed(df, processed_dir=tmp_path)
+    out = Path(save_processed(df, processed_dir=tmp_path))
 
     assert out.exists()
     reloaded = pd.read_csv(out)

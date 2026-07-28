@@ -8,6 +8,8 @@ from pathlib import Path
 
 import requests
 
+from src import storage
+
 OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast"
 
 DEFAULT_LATITUDE = 48.8566
@@ -42,13 +44,22 @@ def extract_weather(
     return response.json()
 
 
-def save_raw(payload: dict, raw_dir: Path = RAW_DIR) -> Path:
-    """Persist the raw API payload as timestamped JSON."""
-    raw_dir.mkdir(parents=True, exist_ok=True)
+def save_raw(payload: dict, raw_dir: Path = RAW_DIR) -> str:
+    """Persist the raw API payload as timestamped JSON.
+
+    Uploads to the ADLS landing container when enabled, else writes locally.
+    """
     stamp = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    out_path = raw_dir / f"weather_raw_{stamp}.json"
-    out_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
-    return out_path
+    name = f"weather_raw_{stamp}.json"
+    text = json.dumps(payload, indent=2)
+
+    if storage.adls_enabled():
+        return storage.upload_text(storage.LANDING_CONTAINER, name, text)
+
+    raw_dir.mkdir(parents=True, exist_ok=True)
+    out_path = raw_dir / name
+    out_path.write_text(text, encoding="utf-8")
+    return str(out_path)
 
 
 if __name__ == "__main__":
