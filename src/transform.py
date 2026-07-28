@@ -1,8 +1,4 @@
-"""Transform layer: clean and structure raw Open-Meteo data with pandas.
-
-Turns the nested hourly JSON into a flat, typed DataFrame (Gold zone) and
-persists it as CSV. Kept pure/deterministic so it is easy to unit test.
-"""
+"""Clean and structure raw Open-Meteo data into a typed DataFrame."""
 
 from __future__ import annotations
 
@@ -10,9 +6,11 @@ from pathlib import Path
 
 import pandas as pd
 
-PROCESSED_DIR = Path(__file__).resolve().parents[1] / "data" / "processed"
+from src import storage
 
-# API variable -> friendly column name.
+PROCESSED_DIR = Path(__file__).resolve().parents[1] / "data" / "processed"
+GOLD_BLOB = "weather_clean.csv"
+
 COLUMN_RENAMES = {
     "time": "timestamp",
     "temperature_2m": "temperature_c",
@@ -23,11 +21,7 @@ COLUMN_RENAMES = {
 
 
 def transform_weather(payload: dict) -> pd.DataFrame:
-    """Convert a raw Open-Meteo payload into a clean, typed DataFrame.
-
-    Steps: build frame from `hourly`, rename columns, parse timestamps,
-    drop fully-empty rows, coerce numerics, sort and dedupe by timestamp.
-    """
+    """Convert a raw Open-Meteo payload into a clean, typed DataFrame."""
     hourly = payload.get("hourly")
     if not hourly or "time" not in hourly:
         raise ValueError("Payload missing 'hourly' data; cannot transform.")
@@ -41,23 +35,27 @@ def transform_weather(payload: dict) -> pd.DataFrame:
     for col in value_cols:
         df[col] = pd.to_numeric(df[col], errors="coerce")
 
-    # Drop rows with no timestamp or no measurements at all.
     df = df.dropna(subset=["timestamp"])
     df = df.dropna(subset=value_cols, how="all")
 
     df = df.drop_duplicates(subset=["timestamp"]).sort_values("timestamp")
     df = df.reset_index(drop=True)
 
-    # Enrichment: local date + hour for easier dashboard grouping.
     df["date"] = df["timestamp"].dt.date
     df["hour"] = df["timestamp"].dt.hour
 
     return df
 
 
-def save_processed(df: pd.DataFrame, processed_dir: Path = PROCESSED_DIR) -> Path:
-    """Persist the cleaned DataFrame as CSV (Gold zone)."""
+def save_processed(df: pd.DataFrame, processed_dir: Path = PROCESSED_DIR) -> str:
+    """Persist the cleaned DataFrame as CSV.
+
+    Uploads to the ADLS gold container when enabled, else writes locally.
+    """
+    if storage.adls_enabled():
+        return storage.upload_text(storage.GOLD_CONTAINER, GOLD_BLOB, df.to_csv(index=False))
+
     processed_dir.mkdir(parents=True, exist_ok=True)
-    out_path = processed_dir / "weather_clean.csv"
+    out_path = processed_dir / GOLD_BLOB
     df.to_csv(out_path, index=False)
-    return out_path
+    return str(out_path)

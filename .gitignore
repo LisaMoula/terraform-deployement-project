@@ -38,6 +38,8 @@ override.tf.json
 .terraform.lock.hcl
 tfplan
 *.tfplan
+# Config backend spécifique à l'environnement (généré par bootstrap)
+backend.hcl
 
 # ---- Projet : consignes non versionnées ----
 prompt.md

@@ -1,8 +1,4 @@
-"""Extract layer: fetch raw weather data from the Open-Meteo API.
-
-Open-Meteo is free and requires no API key. We keep this module free of any
-transformation logic so the "raw" data can be persisted untouched (Landing zone).
-"""
+"""Fetch raw weather data from the Open-Meteo API (no API key needed)."""
 
 from __future__ import annotations
 
@@ -12,13 +8,13 @@ from pathlib import Path
 
 import requests
 
+from src import storage
+
 OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast"
 
-# Default location: Paris. Overridable via extract_weather() args.
 DEFAULT_LATITUDE = 48.8566
 DEFAULT_LONGITUDE = 2.3522
 
-# Hourly variables we request from the API.
 HOURLY_VARIABLES = [
     "temperature_2m",
     "relative_humidity_2m",
@@ -35,10 +31,7 @@ def extract_weather(
     forecast_days: int = 3,
     timeout: int = 30,
 ) -> dict:
-    """Call the Open-Meteo forecast API and return the parsed JSON payload.
-
-    Raises requests.HTTPError on a non-2xx response so callers/tests can react.
-    """
+    """Call the Open-Meteo forecast API and return the parsed JSON payload."""
     params = {
         "latitude": latitude,
         "longitude": longitude,
@@ -51,13 +44,22 @@ def extract_weather(
     return response.json()
 
 
-def save_raw(payload: dict, raw_dir: Path = RAW_DIR) -> Path:
-    """Persist the raw API payload as timestamped JSON (Landing zone)."""
-    raw_dir.mkdir(parents=True, exist_ok=True)
+def save_raw(payload: dict, raw_dir: Path = RAW_DIR) -> str:
+    """Persist the raw API payload as timestamped JSON.
+
+    Uploads to the ADLS landing container when enabled, else writes locally.
+    """
     stamp = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    out_path = raw_dir / f"weather_raw_{stamp}.json"
-    out_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
-    return out_path
+    name = f"weather_raw_{stamp}.json"
+    text = json.dumps(payload, indent=2)
+
+    if storage.adls_enabled():
+        return storage.upload_text(storage.LANDING_CONTAINER, name, text)
+
+    raw_dir.mkdir(parents=True, exist_ok=True)
+    out_path = raw_dir / name
+    out_path.write_text(text, encoding="utf-8")
+    return str(out_path)
 
 
 if __name__ == "__main__":

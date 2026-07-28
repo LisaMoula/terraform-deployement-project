@@ -7,7 +7,6 @@ services:
     container_name: weather-dashboard
     ports:
       - "8501:8501"
-    # Persiste les données ETL sur l'hôte (Landing/Gold).
     volumes:
       - ./data:/app/data
     restart: unless-stopped

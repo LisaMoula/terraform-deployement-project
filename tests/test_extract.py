@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -53,7 +54,7 @@ def test_extract_weather_raises_on_http_error(mock_get):
 
 def test_save_raw_writes_file(tmp_path):
     payload = _fake_payload()
-    out = save_raw(payload, raw_dir=tmp_path)
+    out = Path(save_raw(payload, raw_dir=tmp_path))
 
     assert out.exists()
     assert json.loads(out.read_text(encoding="utf-8"))["hourly"]["time"][0] == (
