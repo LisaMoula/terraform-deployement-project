@@ -1,117 +1,90 @@
-# Weather Big Data / DevOps Project — ESGI
+# Weather DevOps Project
 
-End-to-end DevOps & Data Engineering project: ingest free weather data
-(Open-Meteo), clean it with pandas, visualize it in Streamlit, then deploy
-to Azure with Terraform (remote state + Key Vault) via a CI/CD pipeline.
+Ingest free weather data (Open-Meteo), clean it with pandas, visualize it in
+Streamlit, containerize with Docker, and deploy to Azure with Terraform
+(remote state + Key Vault).
 
-## Roadmap
-
-| Étape | Contenu | Statut |
-|-------|---------|--------|
-| 1 | Application Python météo en local (ETL) | ✅ en cours |
-| 2 | Dashboard Streamlit (`app.py`) | ✅ |
-| 3 | Dockerisation | ✅ |
-| 4 | Structure Git & `.gitignore` | ✅ |
-| 5 | Terraform base + remote state Azure | ⏳ |
-| 6 | Terraform complet + Key Vault | ⏳ |
-| 7 | Pipeline CI | ⏳ |
-| 8 | Pipeline CD | ⏳ |
-| 9 | Démo live + livrables | ⏳ |
-
-## Arborescence
+## Layout
 
 ```
-project/
+.
 ├── data/
-│   ├── raw/         # Landing zone : payloads JSON bruts de l'API
-│   └── processed/   # Gold zone    : CSV nettoyé (pandas)
+│   ├── raw/            # raw JSON payloads from the API
+│   └── processed/      # cleaned CSV
 ├── src/
-│   ├── extract.py   # Appel API Open-Meteo -> JSON brut
-│   ├── transform.py # Nettoyage/typage pandas -> CSV
-│   └── pipeline.py  # Orchestration ETL (extract -> transform -> load)
+│   ├── extract.py      # call Open-Meteo -> raw JSON
+│   ├── transform.py    # pandas cleaning -> CSV
+│   └── pipeline.py     # ETL orchestration
 ├── tests/
 │   ├── test_extract.py
 │   └── test_transform.py
+├── app.py              # Streamlit dashboard
+├── Dockerfile
+├── docker-compose.yml
 ├── requirements.txt
-├── README.md
-└── .gitignore
+├── scripts/            # Azure backend bootstrap
+└── terraform/          # infrastructure as code
 ```
 
-## Étape 1 — Pipeline ETL en local
-
-### Installation
+## Local run
 
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
+
+python -m src.pipeline          # ETL: fetch, clean, write CSV
+pytest -v                       # tests (HTTP mocked)
+streamlit run app.py            # dashboard on http://localhost:8501
 ```
 
-### Exécution
+Custom location: `python -m src.pipeline --lat 45.75 --lon 4.85 --days 5`
+
+## Docker
 
 ```powershell
-# ETL complet : télécharge, nettoie, écrit data/raw + data/processed
-python -m src.pipeline
-
-# Localisation personnalisée (ex : Lyon, 5 jours de prévision)
-python -m src.pipeline --lat 45.75 --lon 4.85 --days 5
+docker compose up --build       # http://localhost:8501
 ```
 
-Sorties :
-- `data/raw/weather_raw_<timestamp>.json` — payload brut (Landing).
-- `data/processed/weather_clean.csv` — données nettoyées (Gold).
+## Terraform (Azure)
 
-### Tests
+```
+terraform/
+├── main.tf providers.tf backend.tf variables.tf outputs.tf
+├── terraform.tfvars.example
+└── modules/
+    ├── storage/    # Data Lake Gen2 + landing/gold containers
+    ├── keyvault/   # Key Vault + access policies + secrets
+    └── app/        # App Service Linux (Streamlit container) + managed identity
+```
+
+Resources: Resource Group, Storage Account (Data Lake), Key Vault, App Service.
+State is stored remotely on an Azure Storage Account with state locking.
 
 ```powershell
-pytest -v
+az login
+./scripts/bootstrap_backend.ps1              # creates backend, writes backend.hcl
+
+cd terraform
+cp terraform.tfvars.example terraform.tfvars
+terraform init -backend-config=backend.hcl
+terraform plan -out=tfplan
+terraform apply tfplan
 ```
 
-Les tests mockent l'appel HTTP (aucun réseau requis) et valident la logique
-pandas (renommage, typage, tri, déduplication, écriture CSV).
+## Security
 
-## Étape 2 — Dashboard Streamlit
+No secrets in the repo. The storage connection string is written to Key Vault
+and read back via `data "azurerm_key_vault_secret"`. The App Service uses a
+system-assigned managed identity with read-only Key Vault access. `backend.hcl`,
+`*.tfvars`, and `*.tfstate` are gitignored.
 
-```powershell
-streamlit run app.py
-```
+## Data source
 
-Ouvre http://localhost:8501. Le dashboard :
-- lit `data/processed/weather_clean.csv` (le génère si absent) ;
-- affiche 4 KPIs (temp. moyenne/max, précip. totales, vent moyen) ;
-- graphiques : température, précipitations, vent + humidité ;
-- carte de la ville sélectionnée + table des données brutes ;
-- sélecteur de ville + bouton **Rafraîchir** qui relance le pipeline ETL.
+[Open-Meteo](https://open-meteo.com/) - free weather API, no API key.
 
-## Étape 3 — Dockerisation
+## Git branches
 
-Image `python:3.11-slim`, utilisateur **non-root** (`appuser`), healthcheck sur
-`/_stcore/health`, cache des dépendances.
-
-```powershell
-# Avec docker compose (recommandé)
-docker compose up --build
-# -> http://localhost:8501
-
-# Ou en direct
-docker build -t weather-dashboard:local .
-docker run -p 8501:8501 -v ${PWD}/data:/app/data weather-dashboard:local
-```
-
-Le volume `./data:/app/data` persiste les zones Landing/Gold sur l'hôte.
-
-## Source de données
-
-[Open-Meteo](https://open-meteo.com/) — API météo gratuite, **sans clé API**.
-Variables horaires : température, humidité, précipitations, vitesse du vent.
-
-## Conventions de branches Git
-
-- `main` — branche stable, protégée.
-- `feature/add-*` — ajout de fonctionnalité (ex : `feature/add-streamlit`).
-- `feature/modif-*` — modification existante (ex : `feature/modif-dockerfile`).
-
-## Sécurité
-
-Aucun secret en clair dans le dépôt. Les clés/identités Azure seront gérées
-via Azure Key Vault et Service Principals / Managed Identities (étapes 5-6).
+- `main` - stable branch.
+- `feature/add-*` - new feature.
+- `feature/modif-*` - change to existing code.

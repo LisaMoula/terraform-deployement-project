@@ -1,0 +1,5 @@
+# Copy to backend.hcl and adapt. backend.hcl is gitignored.
+resource_group_name  = "rg-tfstate-weather"
+storage_account_name = "sttfstateweatherXXXX"
+container_name       = "tfstate"
+key                  = "weather.dev.tfstate"
