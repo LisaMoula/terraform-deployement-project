@@ -113,6 +113,12 @@ App Service reads it at runtime through a Key Vault reference
 (`@Microsoft.KeyVault(SecretUri=...)`) resolved by its system-assigned managed
 identity. `backend.hcl`, `*.tfvars`, and `*.tfstate` are gitignored.
 
+## Docs
+
+- [docs/DEMO.md](docs/DEMO.md) - live demo runbook (infra change via PR).
+- [docs/DOSSIER_TECHNIQUE.md](docs/DOSSIER_TECHNIQUE.md) - technical report outline.
+- [docs/PRESENTATION.md](docs/PRESENTATION.md) - slides outline.
+
 ## Data source
 
 [Open-Meteo](https://open-meteo.com/) - free weather API, no API key.
