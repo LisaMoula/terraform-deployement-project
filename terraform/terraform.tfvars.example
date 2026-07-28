@@ -1,0 +1,6 @@
+# Copy to terraform.tfvars and adapt. terraform.tfvars is gitignored.
+project         = "weather"
+environment     = "dev"
+location        = "France Central"
+app_service_sku = "B1"
+docker_image    = "weather-dashboard:latest"

@@ -1,10 +1,4 @@
-"""Pipeline orchestrator: extract -> transform -> load (ETL).
-
-Ties the extract and transform layers together and writes both the raw
-Landing payload and the cleaned Gold CSV. Run as a module:
-
-    python -m src.pipeline
-"""
+"""ETL orchestrator: extract -> transform -> load. Run: python -m src.pipeline"""
 
 from __future__ import annotations
 
@@ -19,7 +13,7 @@ def run_pipeline(
     longitude: float = DEFAULT_LONGITUDE,
     forecast_days: int = 3,
 ) -> dict:
-    """Execute the full ETL and return a summary dict of what was produced."""
+    """Run the full ETL and return a summary of what was produced."""
     payload = extract_weather(latitude, longitude, forecast_days)
     raw_path = save_raw(payload)
 
