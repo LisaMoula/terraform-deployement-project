@@ -50,19 +50,11 @@ module "keyvault" {
   location            = azurerm_resource_group.main.location
   key_vault_name      = local.key_vault_name
   tenant_id           = data.azurerm_client_config.current.tenant_id
-  admin_object_id     = data.azurerm_client_config.current.object_id
   tags                = local.tags
 
   secrets = {
     "storage-connection-string" = module.storage.primary_connection_string
   }
-}
-
-data "azurerm_key_vault_secret" "storage_connection" {
-  name         = "storage-connection-string"
-  key_vault_id = module.keyvault.id
-
-  depends_on = [module.keyvault]
 }
 
 module "app" {
@@ -81,6 +73,6 @@ module "app" {
 
   app_settings = {
     WEBSITES_PORT             = "8501"
-    STORAGE_CONNECTION_STRING = data.azurerm_key_vault_secret.storage_connection.value
+    STORAGE_CONNECTION_STRING = "@Microsoft.KeyVault(SecretUri=${module.keyvault.secret_uris["storage-connection-string"]})"
   }
 }

@@ -14,11 +14,6 @@ variable "tenant_id" {
   type = string
 }
 
-variable "admin_object_id" {
-  description = "Object ID du principal exécutant Terraform (accès secrets)."
-  type        = string
-}
-
 variable "secrets" {
   description = "Map nom => valeur des secrets à créer."
   type        = map(string)

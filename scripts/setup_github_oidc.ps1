@@ -55,9 +55,8 @@ Write-Host "==> Storage Blob Data Contributor on tfstate account (remote state)"
 az role assignment create --assignee $AppId --role "Storage Blob Data Contributor" `
   --scope $tfstateId --output none
 
-Write-Host "==> Granting Key Vault secret read (plan reads a KV secret)"
-az keyvault set-policy --name $KeyVaultName --spn $AppId `
-  --secret-permissions get list --output none
+# No manual Key Vault policy needed: terraform manages the deployer access policy,
+# and the app reads the secret at runtime via a Key Vault reference.
 
 Write-Host "==> Pushing GitHub secrets"
 gh secret set AZURE_CLIENT_ID       --repo $Repo --body $AppId

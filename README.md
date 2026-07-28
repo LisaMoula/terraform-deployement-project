@@ -93,12 +93,25 @@ gh auth login
 Repo secrets used: `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`,
 `TFSTATE_RG`, `TFSTATE_SA`, `TFSTATE_CONTAINER`.
 
+## CD (GitHub Actions)
+
+`.github/workflows/cd.yml` runs on `workflow_dispatch` or a published release:
+
+1. `deploy-dev` (environment `dev`, auto): terraform apply, build/push the image
+   to ACR, restart the App Service.
+2. `deploy-prod` (environment `prod`, **manual approval gate**): re-applies the
+   validated plan after a required reviewer approves.
+
+Azure auth uses a service principal (secret `AZURE_CREDENTIALS`, the JSON from
+`az ad sp create-for-rbac --json-auth`). The GitHub `prod` environment has a
+required reviewer (created by `scripts/setup_cd.ps1`).
+
 ## Security
 
-No secrets in the repo. The storage connection string is written to Key Vault
-and read back via `data "azurerm_key_vault_secret"`. The App Service uses a
-system-assigned managed identity with read-only Key Vault access. `backend.hcl`,
-`*.tfvars`, and `*.tfstate` are gitignored.
+No secrets in the repo. The storage connection string lives in Key Vault; the
+App Service reads it at runtime through a Key Vault reference
+(`@Microsoft.KeyVault(SecretUri=...)`) resolved by its system-assigned managed
+identity. `backend.hcl`, `*.tfvars`, and `*.tfstate` are gitignored.
 
 ## Data source
 
