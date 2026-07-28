@@ -67,6 +67,10 @@ jobs:
     needs: terraform-static
     # Azure OIDC federated creds only cover main + pull_request.
     if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+    # Serialize with other runs touching the same remote state (no lock clash).
+    concurrency:
+      group: tf-state-dev
+      cancel-in-progress: false
     defaults:
       run:
         working-directory: ${{ env.TF_WORKING_DIR }}
