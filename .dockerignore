@@ -1,0 +1,34 @@
+# Build context slim : ne copie que le nécessaire.
+.git/
+.gitignore
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Données générées (recréées au runtime dans le conteneur)
+data/raw/*
+data/processed/*
+
+# Docs / IaC non nécessaires à l'image
+README.md
+prompt.md
+*.md
+.github/
+terraform/
+*.tf
+*.tfstate*
+tfplan
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+st.log
