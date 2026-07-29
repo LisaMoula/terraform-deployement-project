@@ -1,7 +1,5 @@
 # Dossier technique — Projet DevOps CI/CD & IaC
 
-> Trame à compléter. Chaque section liste les points à traiter et pointe vers le
-> code correspondant.
 
 ## 1. Contexte et objectifs
 
