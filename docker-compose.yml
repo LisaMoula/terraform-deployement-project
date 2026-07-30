@@ -6,9 +6,9 @@ services:
     image: weather-dashboard:local
     container_name: weather-dashboard
     ports:
-      - "8501:8501"
+      - "8501:8501"          # host:container, maps to Streamlit's server.port
     volumes:
-      - ./data:/app/data
+      - ./data:/app/data     # persists ETL output on the host past `down`
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8501/_stcore/health').status==200 else 1)"]

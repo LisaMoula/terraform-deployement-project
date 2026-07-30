@@ -16,7 +16,8 @@ htmlcov/
 data/raw/*
 data/processed/*
 
-# Docs / IaC non nécessaires à l'image
+# Docs / IaC non nécessaires à l'image : exclus aussi pour que le state,
+# les credentials et les .tf ne finissent jamais dans l'image publiée sur l'ACR
 README.md
 prompt.md
 *.md

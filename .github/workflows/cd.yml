@@ -57,6 +57,8 @@ jobs:
 
       - name: Build and push image
         run: |
+          # build context is ".." because this step runs from terraform/,
+          # but the Dockerfile lives at the repo root
           ACR=$(terraform output -raw acr_login_server)
           az acr login --name "${ACR%%.*}"
           docker build -t "$ACR/weather-dashboard:latest" ..
@@ -64,6 +66,7 @@ jobs:
 
       - name: Restart app
         run: |
+          # forces the App Service to re-pull :latest; it won't do it on its own
           APP=$(terraform output -raw app_url | sed 's|https://||; s|\..*||')
           az webapp restart --name "$APP" --resource-group "$(terraform output -raw resource_group_name)"
 
