@@ -37,7 +37,7 @@ variable "tags" {
   description = "Tags communs appliqués à toutes les ressources."
   type        = map(string)
   default = {
-    project    = "weather-dashboard"
+    project    = "weather-dashboard-test"
     managed_by = "terraform"
     course     = "ESGI-DevOps"
   }
