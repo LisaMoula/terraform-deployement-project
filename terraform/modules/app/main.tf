@@ -32,6 +32,8 @@ resource "azurerm_linux_web_app" "this" {
   app_settings = var.app_settings
 }
 
+# grants image pull rights on the ACR to the app's managed identity, replacing
+# the registry's disabled admin login/password entirely
 resource "azurerm_role_assignment" "acr_pull" {
   scope                = var.acr_id
   role_definition_name = "AcrPull"
