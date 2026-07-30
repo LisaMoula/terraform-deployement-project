@@ -5,6 +5,6 @@ resource "azurerm_container_registry" "this" {
   sku                 = "Basic"
   # no static admin login/password: the App Service pulls images via its
   # managed identity + the AcrPull role instead (see modules/app/main.tf)
-  admin_enabled       = false
-  tags                = var.tags
+  admin_enabled = false
+  tags          = var.tags
 }
