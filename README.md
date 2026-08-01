@@ -4,6 +4,12 @@ Ingest free weather data (Open-Meteo), clean it with pandas, visualize it in
 Streamlit, containerize with Docker, and deploy to Azure with Terraform
 (remote state + Key Vault).
 
+## Prerequisites
+
+- Python 3.11+
+- Docker Desktop (for the container run)
+- Azure CLI (`az`) and Terraform 1.5+ (for the infrastructure part)
+
 ## Layout
 
 ```
